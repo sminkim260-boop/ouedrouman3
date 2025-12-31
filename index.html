@@ -27,6 +27,35 @@
         body { font-family: 'Tajawal', sans-serif; transition: background-color 0.4s ease; }
         .dark body { background-color: #0f172a; color: #f1f5f9; }
         
+        /* Sidebar Responsive Logic */
+        #main-sidebar {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 1024px) {
+            #main-sidebar {
+                transform: translateX(100%); /* Hidden by default on mobile */
+                width: 280px;
+            }
+            #main-sidebar.active {
+                transform: translateX(0); /* Show when active */
+            }
+            main { margin-right: 0 !important; }
+        }
+
+        /* Overlay */
+        #sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 90;
+        }
+        #sidebar-overlay.active { display: block; }
+
         .glass-card {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
@@ -70,6 +99,9 @@
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased overflow-x-hidden">
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <!-- Toast Notifications -->
     <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 rounded-2xl shadow-2xl opacity-0 translate-y-20 transition-all duration-500 flex items-center gap-3">
@@ -167,102 +199,106 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="lg:mr-72 min-h-screen flex flex-col">
+    <main class="lg:mr-72 min-h-screen flex flex-col transition-all duration-300">
         <!-- Header -->
-        <header class="sticky top-0 z-40 bg-white/70 dark:bg-darkCard/70 backdrop-blur-xl p-6 border-b dark:border-slate-800 flex items-center justify-between">
-            <div class="relative w-full max-w-lg">
-                <input id="globalSearch" type="text" oninput="unifiedSearch(this.value)" placeholder="ابحث عن دروس، كتب، أو اختبارات..." class="w-full bg-white dark:bg-slate-800/50 rounded-2xl py-3.5 pr-12 pl-4 outline-none dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-4 focus:ring-teal-500/10 transition-all shadow-sm">
-                <i data-lucide="search" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+        <header class="sticky top-0 z-40 bg-white/70 dark:bg-darkCard/70 backdrop-blur-xl p-4 lg:p-6 border-b dark:border-slate-800 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-4 flex-grow max-w-lg">
+                <!-- Mobile Menu Button -->
+                <button onclick="toggleSidebar()" class="lg:hidden p-3 bg-white dark:bg-slate-800 rounded-2xl border dark:border-slate-700 shadow-sm">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
                 
-                <div id="search-dropdown" class="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-darkCard border dark:border-slate-700 rounded-[2rem] shadow-2xl hidden overflow-hidden z-50">
-                    <div id="search-results-list" class="p-3"></div>
+                <div class="relative w-full">
+                    <input id="globalSearch" type="text" oninput="unifiedSearch(this.value)" placeholder="ابحث..." class="w-full bg-white dark:bg-slate-800/50 rounded-2xl py-3 pr-12 pl-4 outline-none dark:text-white border border-slate-200 dark:border-slate-700 focus:ring-4 focus:ring-teal-500/10 transition-all shadow-sm">
+                    <i data-lucide="search" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                    
+                    <div id="search-dropdown" class="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-darkCard border dark:border-slate-700 rounded-[2rem] shadow-2xl hidden overflow-hidden z-50">
+                        <div id="search-results-list" class="p-3"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
                 <button onclick="toggleDarkMode()" class="p-3 bg-white dark:bg-slate-800 rounded-2xl border dark:border-slate-700 hover:shadow-lg transition-all">
                     <i data-lucide="moon" class="dark:hidden w-5 h-5"></i>
                     <i data-lucide="sun" class="hidden dark:block w-5 h-5 text-yellow-400"></i>
                 </button>
-                <div id="profile-trigger" class="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 pr-5 rounded-2xl border dark:border-slate-700 cursor-pointer shadow-sm hover:shadow-md transition-all" onclick="currentUser ? null : openAuthModal('login')">
-                    <div class="text-right">
-                        <div id="user-name-tag" class="font-black text-sm dark:text-white">دخول</div>
-                        <div id="user-role-tag" class="text-[10px] text-slate-400 font-bold uppercase">طالب علم</div>
+                <div id="profile-trigger" class="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 pr-4 rounded-2xl border dark:border-slate-700 cursor-pointer shadow-sm hover:shadow-md transition-all" onclick="currentUser ? null : openAuthModal('login')">
+                    <div class="text-right hidden sm:block">
+                        <div id="user-name-tag" class="font-black text-sm dark:text-white leading-tight">دخول</div>
+                        <div id="user-role-tag" class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">طالب علم</div>
                     </div>
-                    <img id="user-avatar-tag" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" class="w-10 h-10 rounded-xl bg-teal-50 border-2 border-white dark:border-slate-700 shadow-sm">
+                    <img id="user-avatar-tag" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest" class="w-9 h-9 rounded-xl bg-teal-50 border-2 border-white dark:border-slate-700 shadow-sm">
                 </div>
             </div>
         </header>
 
-        <!-- Dynamic Pages -->
+        <!-- Pages Container -->
         <div class="flex-grow">
             <!-- Home -->
-            <div id="page-home" class="page-content active p-6 lg:p-12">
-                <div class="relative rounded-[4rem] p-16 text-white shadow-2xl shadow-teal-900/20 mb-16 overflow-hidden group">
+            <div id="page-home" class="page-content active p-4 lg:p-12">
+                <div class="relative rounded-[3rem] lg:rounded-[4rem] p-8 lg:p-16 text-white shadow-2xl shadow-teal-900/20 mb-10 lg:mb-16 overflow-hidden group">
                     <div class="absolute inset-0 bg-gradient-to-br from-teal-600 via-teal-700 to-teal-900"></div>
-                    <div class="absolute -right-20 -bottom-20 w-96 h-96 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
-                    <div class="relative z-10">
-                        <span class="inline-block px-4 py-1.5 bg-white/20 rounded-full text-xs font-black tracking-widest uppercase mb-6">أكاديمية واد الرمان</span>
-                        <h1 class="text-6xl font-black mb-6 leading-tight">بوابتك لتعلم <br><span class="text-teal-200">العلوم الشرعية</span></h1>
-                        <p class="text-xl text-teal-50 max-w-xl opacity-80 leading-relaxed mb-10">منصة تفاعلية متكاملة تجمع بين أصالة المحتوى وحداثة التجربة التعليمية.</p>
-                        <div class="flex gap-4">
+                    <div class="relative z-10 text-center lg:text-right">
+                        <span class="inline-block px-4 py-1.5 bg-white/20 rounded-full text-[10px] font-black tracking-widest uppercase mb-6">أكاديمية واد الرمان</span>
+                        <h1 class="text-4xl lg:text-6xl font-black mb-6 leading-tight">بوابتك لتعلم <br><span class="text-teal-200">العلوم الشرعية</span></h1>
+                        <p class="text-lg lg:text-xl text-teal-50 max-w-xl opacity-80 leading-relaxed mb-10 mx-auto lg:mx-0">منصة تفاعلية متكاملة تجمع بين أصالة المحتوى وحداثة التجربة التعليمية.</p>
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                             <button onclick="protectedNavigation('subjects')" class="bg-white text-teal-900 px-8 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition-transform">ابدأ التعلم الآن</button>
                             <button onclick="protectedNavigation('library')" class="bg-teal-500/30 backdrop-blur-md text-white px-8 py-4 rounded-2xl font-black border border-white/10 hover:bg-teal-500/40 transition-all">تصفح المكتبة</button>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="glass-card p-10 rounded-[3rem] text-center">
-                        <div class="w-20 h-20 bg-teal-100 dark:bg-teal-900/30 rounded-3xl flex items-center justify-center text-teal-600 mx-auto mb-8 shadow-inner"><i data-lucide="book-marked" class="w-10 h-10"></i></div>
-                        <h3 class="text-2xl font-black mb-4 dark:text-white">منهج مؤصل</h3>
-                        <p class="text-slate-500 leading-relaxed">دروس منتقاة في العقيدة، الفقه، والسيرة النبوية بأقلام العلماء.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                    <div class="glass-card p-8 lg:p-10 rounded-[2.5rem] lg:rounded-[3rem] text-center">
+                        <div class="w-16 h-16 bg-teal-100 dark:bg-teal-900/30 rounded-2xl flex items-center justify-center text-teal-600 mx-auto mb-6 shadow-inner"><i data-lucide="book-marked" class="w-8 h-8"></i></div>
+                        <h3 class="text-xl lg:text-2xl font-black mb-4 dark:text-white">منهج مؤصل</h3>
+                        <p class="text-slate-500 leading-relaxed text-sm">دروس منتقاة في العقيدة، الفقه، والسيرة النبوية بأقلام العلماء.</p>
                     </div>
-                    <div class="glass-card p-10 rounded-[3rem] text-center">
-                        <div class="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-3xl flex items-center justify-center text-amber-600 mx-auto mb-8 shadow-inner"><i data-lucide="gauge" class="w-10 h-10"></i></div>
-                        <h3 class="text-2xl font-black mb-4 dark:text-white">تفاعل ذكي</h3>
-                        <p class="text-slate-500 leading-relaxed">أنظمة اختبارات وتحديات وقت لتعزيز الفهم وسرعة الاستحضار.</p>
+                    <div class="glass-card p-8 lg:p-10 rounded-[2.5rem] lg:rounded-[3rem] text-center">
+                        <div class="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center text-amber-600 mx-auto mb-6 shadow-inner"><i data-lucide="gauge" class="w-8 h-8"></i></div>
+                        <h3 class="text-xl lg:text-2xl font-black mb-4 dark:text-white">تفاعل ذكي</h3>
+                        <p class="text-slate-500 leading-relaxed text-sm">أنظمة اختبارات وتحديات وقت لتعزيز الفهم وسرعة الاستحضار.</p>
                     </div>
-                    <div class="glass-card p-10 rounded-[3rem] text-center">
-                        <div class="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-3xl flex items-center justify-center text-blue-600 mx-auto mb-8 shadow-inner"><i data-lucide="graduation-cap" class="w-10 h-10"></i></div>
-                        <h3 class="text-2xl font-black mb-4 dark:text-white">شهادات تميز</h3>
-                        <p class="text-slate-500 leading-relaxed">كن من المتصدرين واحصل على مراتب عليا في لوحة شرف المنصة.</p>
+                    <div class="glass-card p-8 lg:p-10 rounded-[2.5rem] lg:rounded-[3rem] text-center">
+                        <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 mx-auto mb-6 shadow-inner"><i data-lucide="graduation-cap" class="w-8 h-8"></i></div>
+                        <h3 class="text-xl lg:text-2xl font-black mb-4 dark:text-white">شهادات تميز</h3>
+                        <p class="text-slate-500 leading-relaxed text-sm">كن من المتصدرين واحصل على مراتب عليا في لوحة شرف المنصة.</p>
                     </div>
                 </div>
             </div>
 
             <!-- Subjects -->
             <div id="page-subjects" class="page-content p-6 lg:p-12">
-                <div class="flex items-end justify-between mb-12">
-                    <div>
-                        <h1 class="text-4xl font-black dark:text-white mb-2 tracking-tight">المواد التعليمية</h1>
-                        <p class="text-slate-500 font-medium">اختر المادة وابدأ رحلتك في طلب العلم</p>
-                    </div>
+                <div class="mb-12">
+                    <h1 class="text-3xl font-black dark:text-white mb-2 tracking-tight">المواد التعليمية</h1>
+                    <p class="text-slate-500 font-medium text-sm">اختر المادة وابدأ رحلتك في طلب العلم</p>
                 </div>
-                <div id="subjects-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8"></div>
+                <div id="subjects-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 lg:gap-8"></div>
             </div>
 
             <!-- Quizzes -->
             <div id="page-quizzes" class="page-content p-6 lg:p-12">
                 <div class="text-center mb-16">
-                    <h1 class="text-4xl font-black dark:text-white mb-4">اختبر معلوماتك</h1>
-                    <p class="text-slate-500 max-w-2xl mx-auto">مجموعة متنوعة من الاختبارات التقييمية لقياس مدى استيعابك للمواد الشرعية.</p>
+                    <h1 class="text-3xl font-black dark:text-white mb-4">اختبر معلوماتك</h1>
+                    <p class="text-slate-500 max-w-2xl mx-auto text-sm">مجموعة متنوعة من الاختبارات التقييمية لقياس مدى استيعابك للمواد الشرعية.</p>
                 </div>
-                <div id="quizzes-grid" class="grid grid-cols-1 md:grid-cols-3 gap-10"></div>
+                <div id="quizzes-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10"></div>
             </div>
 
             <!-- Library -->
             <div id="page-library" class="page-content p-6 lg:p-12">
-                <div class="flex items-center gap-6 mb-16 p-8 bg-amber-50 dark:bg-amber-900/10 rounded-[3rem] border border-amber-100 dark:border-amber-900/20">
-                    <div class="w-20 h-20 bg-amber-600 rounded-[2rem] flex items-center justify-center text-white shadow-xl shadow-amber-600/20">
-                        <i data-lucide="bookmark" class="w-10 h-10"></i>
+                <div class="flex flex-col sm:flex-row items-center gap-6 mb-16 p-8 bg-amber-50 dark:bg-amber-900/10 rounded-[3rem] border border-amber-100 dark:border-amber-900/20 text-center sm:text-right">
+                    <div class="w-16 h-16 bg-amber-600 rounded-2xl flex items-center justify-center text-white shadow-xl flex-shrink-0">
+                        <i data-lucide="bookmark" class="w-8 h-8"></i>
                     </div>
                     <div>
-                        <h1 class="text-4xl font-black dark:text-white mb-1">المكتبة الرقمية</h1>
-                        <p class="text-amber-800 dark:text-amber-500 font-bold opacity-80">كنوز من أمهات الكتب الإسلامية بين يديك</p>
+                        <h1 class="text-3xl font-black dark:text-white mb-1">المكتبة الرقمية</h1>
+                        <p class="text-amber-800 dark:text-amber-500 font-bold opacity-80 text-sm">كنوز من أمهات الكتب الإسلامية بين يديك</p>
                     </div>
                 </div>
-                <div id="books-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-10"></div>
+                <div id="books-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 lg:gap-10"></div>
             </div>
 
             <!-- Leaderboard -->
@@ -270,10 +306,10 @@
                 <div class="max-w-4xl mx-auto">
                     <div class="text-center mb-12">
                         <div class="inline-block p-4 bg-yellow-100 dark:bg-yellow-900/30 rounded-3xl mb-4">
-                            <i data-lucide="trophy" class="w-12 h-12 text-yellow-600"></i>
+                            <i data-lucide="trophy" class="w-10 h-10 text-yellow-600"></i>
                         </div>
-                        <h1 class="text-4xl font-black dark:text-white mb-2">لوحة الشرف</h1>
-                        <p class="text-slate-500">أفضل الطلاب تفاعلاً وإنجازاً</p>
+                        <h1 class="text-3xl font-black dark:text-white mb-2">لوحة الشرف</h1>
+                        <p class="text-slate-500 text-sm">أفضل الطلاب تفاعلاً وإنجازاً</p>
                     </div>
                     <div id="leaderboard-list" class="space-y-4"></div>
                 </div>
@@ -282,36 +318,36 @@
             <!-- Challenge -->
             <div id="page-challenge" class="page-content p-6 lg:p-12">
                 <div id="game-container" class="max-w-3xl mx-auto">
-                    <div id="game-start" class="glass-card rounded-[4rem] p-20 text-center">
-                        <i data-lucide="timer" class="w-20 h-20 text-teal-600 mx-auto mb-8"></i>
-                        <h2 class="text-4xl font-black mb-4 dark:text-white">تحدي الوقت</h2>
-                        <p class="text-slate-500 text-lg mb-12 leading-relaxed">استعد للإجابة على أكبر عدد ممكن من الأسئلة في 30 ثانية. كل إجابة صحيحة تمنحك 10 نقاط!</p>
-                        <button onclick="startGame()" class="bg-teal-600 text-white px-16 py-5 rounded-[2rem] font-black text-xl hover:bg-teal-700 transition-all shadow-xl shadow-teal-600/20">ابدأ الآن</button>
+                    <div id="game-start" class="glass-card rounded-[3rem] lg:rounded-[4rem] p-10 lg:p-20 text-center">
+                        <i data-lucide="timer" class="w-16 h-16 text-teal-600 mx-auto mb-8"></i>
+                        <h2 class="text-3xl lg:text-4xl font-black mb-4 dark:text-white">تحدي الوقت</h2>
+                        <p class="text-slate-500 text-sm lg:text-lg mb-12 leading-relaxed">استعد للإجابة على أكبر عدد ممكن من الأسئلة في 30 ثانية. كل إجابة صحيحة تمنحك 10 نقاط!</p>
+                        <button onclick="startGame()" class="bg-teal-600 text-white px-12 py-4 rounded-[2rem] font-black text-lg hover:bg-teal-700 transition-all shadow-xl shadow-teal-600/20">ابدأ الآن</button>
                     </div>
 
-                    <div id="game-active" class="hidden glass-card rounded-[4rem] p-12 shadow-2xl">
+                    <div id="game-active" class="hidden glass-card rounded-[3rem] lg:rounded-[4rem] p-8 lg:p-12 shadow-2xl">
                         <div class="flex justify-between items-center mb-12">
-                            <div class="flex items-center gap-3 bg-teal-50 dark:bg-teal-900/20 px-6 py-3 rounded-2xl border border-teal-200 dark:border-teal-800">
-                                <i data-lucide="star" class="w-6 h-6 text-teal-600"></i>
-                                <span class="text-teal-600 font-black text-3xl" id="game-score">0</span>
+                            <div class="flex items-center gap-3 bg-teal-50 dark:bg-teal-900/20 px-4 py-2 rounded-2xl border border-teal-200 dark:border-teal-800">
+                                <i data-lucide="star" class="w-5 h-5 text-teal-600"></i>
+                                <span class="text-teal-600 font-black text-2xl" id="game-score">0</span>
                             </div>
-                            <div class="flex items-center gap-3 bg-rose-50 dark:bg-rose-900/20 px-6 py-3 rounded-2xl border border-rose-200 dark:border-rose-800">
-                                <i data-lucide="clock" class="w-6 h-6 text-rose-600"></i>
-                                <span class="text-rose-600 font-black text-3xl" id="game-timer">30</span>
+                            <div class="flex items-center gap-3 bg-rose-50 dark:bg-rose-900/20 px-4 py-2 rounded-2xl border border-rose-200 dark:border-rose-800">
+                                <i data-lucide="clock" class="w-5 h-5 text-rose-600"></i>
+                                <span class="text-rose-600 font-black text-2xl" id="game-timer">30</span>
                             </div>
                         </div>
                         <div id="question-area" class="text-center">
-                            <h3 id="current-question" class="text-3xl font-black dark:text-white mb-12 leading-tight"></h3>
-                            <div id="answers-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-6"></div>
+                            <h3 id="current-question" class="text-2xl lg:text-3xl font-black dark:text-white mb-12 leading-tight"></h3>
+                            <div id="answers-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6"></div>
                         </div>
                     </div>
 
-                    <div id="game-result" class="hidden glass-card rounded-[4rem] p-20 text-center">
-                        <i data-lucide="party-popper" class="w-20 h-20 text-teal-600 mx-auto mb-6"></i>
-                        <h2 class="text-4xl font-black mb-2 dark:text-white">انتهى الوقت!</h2>
-                        <p class="text-slate-500 mb-8">لقد قمت بعمل رائع</p>
-                        <div class="text-8xl font-black text-teal-600 mb-12" id="final-score">0</div>
-                        <button onclick="startGame()" class="bg-teal-600 text-white px-12 py-4 rounded-2xl font-bold hover:bg-teal-700 transition-all">حاول مرة أخرى</button>
+                    <div id="game-result" class="hidden glass-card rounded-[3rem] lg:rounded-[4rem] p-10 lg:p-20 text-center">
+                        <i data-lucide="party-popper" class="w-16 h-16 text-teal-600 mx-auto mb-6"></i>
+                        <h2 class="text-3xl font-black mb-2 dark:text-white">انتهى الوقت!</h2>
+                        <p class="text-slate-500 mb-8 text-sm">لقد قمت بعمل رائع</p>
+                        <div class="text-7xl lg:text-8xl font-black text-teal-600 mb-12" id="final-score">0</div>
+                        <button onclick="startGame()" class="bg-teal-600 text-white px-10 py-4 rounded-2xl font-bold hover:bg-teal-700 transition-all">حاول مرة أخرى</button>
                     </div>
                 </div>
             </div>
@@ -319,6 +355,7 @@
     </main>
 
     <script>
+        // --- Database & State ---
         const platformData = {
             subjects: [
                 { id: 's1', type: 'subject', title: 'شرح العقيدة الواسطية', desc: 'تأصيل أصول الإيمان بأسلوب ميسر للمبتدئين.', tutor: 'د. عبدالله بن فهد', progress: 45, icon: 'shield-check', color: 'teal' },
@@ -357,23 +394,15 @@
             { name: "سارة محمد", score: 980 }
         ];
 
+        // --- Sidebar Toggle Logic ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('main-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
         // --- Auth Core ---
-        function openAuthModal(mode) {
-            const modal = document.getElementById('auth-modal');
-            modal.classList.remove('invisible', 'opacity-0');
-            toggleAuthForms(mode);
-        }
-
-        function closeAuthModal() {
-            const modal = document.getElementById('auth-modal');
-            modal.classList.add('invisible', 'opacity-0');
-        }
-
-        function toggleAuthForms(mode) {
-            document.getElementById('login-form').classList.toggle('hidden', mode !== 'login');
-            document.getElementById('signup-form').classList.toggle('hidden', mode !== 'signup');
-        }
-
         function handleLogin() {
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
@@ -399,13 +428,6 @@
             updateAuthUI(); closeAuthModal();
         }
 
-        function logout() {
-            currentUser = null;
-            showToast('تم تسجيل الخروج بنجاح', 'success');
-            updateAuthUI();
-            navigateTo('home');
-        }
-
         function updateAuthUI() {
             const tag = document.getElementById('user-name-tag');
             const avatar = document.getElementById('user-avatar-tag');
@@ -416,16 +438,16 @@
                 actions.innerHTML = `
                     <div class="flex flex-col gap-2">
                         <div class="bg-teal-100 dark:bg-teal-900/30 p-3 rounded-xl flex justify-between items-center mb-2">
-                            <span class="text-[10px] font-black text-teal-600 uppercase">نقاطي</span>
-                            <span class="font-black text-teal-700 dark:text-teal-400">${currentUser.score}</span>
+                            <span class="text-[9px] font-black text-teal-600 uppercase">نقاطي</span>
+                            <span class="font-black text-teal-700 dark:text-teal-400 text-sm">${currentUser.score}</span>
                         </div>
-                        <button onclick="logout()" class="w-full bg-rose-50 dark:bg-rose-900/10 text-rose-600 py-3.5 rounded-2xl font-black text-sm hover:bg-rose-100 transition-all border border-rose-100 dark:border-rose-900/30">تسجيل الخروج</button>
+                        <button onclick="logout()" class="w-full bg-rose-50 dark:bg-rose-900/10 text-rose-600 py-3 rounded-2xl font-black text-xs hover:bg-rose-100 transition-all border border-rose-100 dark:border-rose-900/30">تسجيل الخروج</button>
                     </div>
                 `;
             } else {
                 tag.innerText = "دخول";
                 avatar.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=Guest`;
-                actions.innerHTML = `<button onclick="openAuthModal('login')" class="w-full bg-teal-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-teal-700 shadow-xl shadow-teal-600/20 transition-all">انضم لطلاب العلم</button>`;
+                actions.innerHTML = `<button onclick="openAuthModal('login')" class="w-full bg-teal-600 text-white py-3.5 rounded-2xl font-black text-xs hover:bg-teal-700 shadow-lg shadow-teal-600/20 transition-all">انضم لطلاب العلم</button>`;
             }
         }
 
@@ -439,6 +461,10 @@
             const activeNav = document.getElementById('nav-' + pageId);
             if(activeNav) activeNav.classList.add('active-nav');
             
+            // Close sidebar on navigation (mobile)
+            document.getElementById('main-sidebar').classList.remove('active');
+            document.getElementById('sidebar-overlay').classList.remove('active');
+            
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -451,7 +477,7 @@
             navigateTo(pageId);
         }
 
-        // --- Search ---
+        // --- Search Engine ---
         function unifiedSearch(val) {
             const dropdown = document.getElementById('search-dropdown');
             const list = document.getElementById('search-results-list');
@@ -461,43 +487,51 @@
                 ...platformData.subjects,
                 ...platformData.books,
                 ...platformData.quizzes
-            ].filter(item => item.title.includes(val));
+            ].filter(item => 
+                item.title.toLowerCase().includes(val.toLowerCase())
+            );
 
             if (results.length > 0) {
                 dropdown.classList.remove('hidden');
-                list.innerHTML = results.slice(0, 5).map(res => `
-                    <div onclick="protectedNavigation('${res.type === 'quiz' ? 'quizzes' : (res.type === 'book' ? 'library' : 'subjects')}')" class="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-4 rounded-2xl transition-colors">
-                        <div class="w-10 h-10 bg-teal-100 dark:bg-teal-900/30 rounded-xl flex items-center justify-center text-teal-600">
-                            <i data-lucide="search" class="w-4 h-4"></i>
+                list.innerHTML = results.slice(0, 5).map(res => {
+                    const pageKey = res.type === 'quiz' ? 'quizzes' : (res.type === 'book' ? 'library' : 'subjects');
+                    return `
+                        <div onclick="handleSearchResultClick('${pageKey}')" class="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-4 rounded-2xl transition-colors">
+                            <div class="w-10 h-10 bg-teal-100 dark:bg-teal-900/30 rounded-xl flex items-center justify-center text-teal-600">
+                                <i data-lucide="${res.type === 'book' ? 'book' : res.type === 'quiz' ? 'check-square' : 'graduation-cap'}" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <div class="font-black dark:text-white text-xs">${res.title}</div>
+                                <div class="text-[9px] text-slate-400 font-bold uppercase">${res.type}</div>
+                            </div>
                         </div>
-                        <div>
-                            <div class="font-black dark:text-white text-sm">${res.title}</div>
-                            <div class="text-[10px] text-slate-400 font-bold uppercase">${res.type}</div>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
                 lucide.createIcons();
             } else {
-                dropdown.classList.add('hidden');
+                list.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs font-bold">لم يتم العثور على نتائج</div>`;
             }
+        }
+
+        function handleSearchResultClick(pageKey) {
+            const dropdown = document.getElementById('search-dropdown');
+            dropdown.classList.add('hidden');
+            protectedNavigation(pageKey);
         }
 
         // --- Renderers ---
         function renderSubjects() {
             document.getElementById('subjects-grid').innerHTML = platformData.subjects.map(s => `
-                <div class="glass-card p-8 rounded-[3rem] group">
-                    <div class="w-14 h-14 bg-${s.color}-100 dark:bg-${s.color}-900/30 rounded-2xl flex items-center justify-center text-${s.color}-600 mb-6 group-hover:scale-110 transition-transform">
-                        <i data-lucide="${s.icon}" class="w-8 h-8"></i>
+                <div class="glass-card p-8 rounded-[2.5rem] group">
+                    <div class="w-12 h-12 bg-${s.color}-100 dark:bg-${s.color}-900/30 rounded-2xl flex items-center justify-center text-${s.color}-600 mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="${s.icon}" class="w-6 h-6"></i>
                     </div>
-                    <h3 class="text-xl font-black mb-2 dark:text-white">${s.title}</h3>
-                    <p class="text-sm text-slate-500 mb-6 leading-relaxed line-clamp-2">${s.desc}</p>
-                    <div class="flex items-center justify-between mb-4 text-xs font-bold text-slate-400">
-                        <span>إكمال المادة</span>
-                        <span class="text-teal-600">${s.progress}%</span>
+                    <h3 class="text-lg font-black mb-2 dark:text-white">${s.title}</h3>
+                    <p class="text-xs text-slate-500 mb-6 leading-relaxed">${s.desc}</p>
+                    <div class="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-${s.color}-500 transition-all duration-1000" style="width: ${s.progress}%"></div>
                     </div>
-                    <div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div class="h-full bg-teal-500 rounded-full" style="width: ${s.progress}%"></div>
-                    </div>
+                    <button class="w-full mt-6 py-3.5 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl font-black text-xs hover:bg-${s.color}-600 hover:text-white transition-all">متابعة الدرس</button>
                 </div>
             `).join('');
             lucide.createIcons();
@@ -505,143 +539,140 @@
 
         function renderBooks() {
             document.getElementById('books-grid').innerHTML = platformData.books.map(b => `
-                <div class="group cursor-pointer">
-                    <div class="book-spine aspect-[2/3] ${b.cover} rounded-xl shadow-xl mb-4 flex flex-col justify-end p-4 text-white overflow-hidden relative">
-                        <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
-                        <div class="relative z-10">
-                            <div class="text-xs font-bold opacity-60 mb-1">${b.author}</div>
-                            <div class="text-lg font-black leading-tight">${b.title}</div>
-                        </div>
+                <div class="flex flex-col items-center group cursor-pointer">
+                    <div class="book-spine w-full aspect-[2/3] ${b.cover} rounded-lg shadow-2xl mb-4 relative overflow-hidden flex items-center justify-center p-4 border-r-4 border-black/20">
+                        <div class="absolute inset-y-0 left-0 w-2 bg-white/10 blur-[1px]"></div>
+                        <span class="text-white font-black text-center text-[10px] leading-tight">${b.title}</span>
                     </div>
-                    <button class="w-full py-2 text-sm font-bold text-slate-400 hover:text-teal-600 transition-colors">تصفح الكتاب</button>
+                    <h4 class="font-black text-xs dark:text-white text-center mb-1 group-hover:text-teal-600 transition-colors">${b.title}</h4>
+                    <p class="text-[9px] text-slate-400 font-bold">${b.author}</p>
                 </div>
             `).join('');
         }
 
         function renderQuizzes() {
             document.getElementById('quizzes-grid').innerHTML = platformData.quizzes.map(q => `
-                <div class="glass-card p-10 rounded-[3rem] border-b-8 border-b-${q.color}-500/20">
-                    <div class="flex justify-between items-start mb-8">
-                        <div class="w-12 h-12 bg-${q.color}-100 dark:bg-${q.color}-900/30 rounded-xl flex items-center justify-center text-${q.color}-600">
-                            <i data-lucide="help-circle" class="w-6 h-6"></i>
+                <div class="glass-card p-8 rounded-[3rem] relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <div class="w-10 h-10 bg-${q.color}-100 dark:bg-${q.color}-900/30 rounded-xl flex items-center justify-center text-${q.color}-600 mb-6">
+                            <i data-lucide="help-circle" class="w-5 h-5"></i>
                         </div>
-                        <span class="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-[10px] font-black text-slate-500">${q.questions} سؤال</span>
+                        <h3 class="text-xl font-black mb-3 dark:text-white tracking-tight">${q.title}</h3>
+                        <p class="text-xs text-slate-500 mb-6 leading-relaxed">${q.desc}</p>
+                        <button class="flex items-center gap-2 text-${q.color}-600 font-black text-xs hover:gap-4 transition-all uppercase tracking-wider">
+                            ابدأ الاختبار الآن <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        </button>
                     </div>
-                    <h3 class="text-2xl font-black mb-4 dark:text-white">${q.title}</h3>
-                    <p class="text-slate-500 mb-8 text-sm leading-relaxed">${q.desc}</p>
-                    <button class="w-full bg-${q.color}-600 text-white py-4 rounded-2xl font-black hover:opacity-90 transition-all shadow-lg shadow-${q.color}-600/20">بدء الاختبار</button>
                 </div>
             `).join('');
             lucide.createIcons();
         }
 
         function renderLeaderboard() {
-            const list = document.getElementById('leaderboard-list');
-            list.innerHTML = leaderboard.sort((a,b) => b.score - a.score).map((u, i) => `
-                <div class="flex items-center gap-6 p-6 glass-card rounded-3xl ${i === 0 ? 'ring-2 ring-yellow-400 scale-[1.02]' : ''}">
-                    <div class="w-12 h-12 flex items-center justify-center font-black text-2xl ${i === 0 ? 'text-yellow-500' : (i === 1 ? 'text-slate-400' : 'text-amber-700')}">
-                        ${i + 1}
-                    </div>
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}" class="w-14 h-14 rounded-2xl bg-white shadow-sm border dark:border-slate-700">
-                    <div class="flex-grow">
-                        <div class="font-black dark:text-white text-lg">${u.name}</div>
-                        <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">طالب متميز</div>
+            const sorted = [...leaderboard].sort((a, b) => b.score - a.score);
+            document.getElementById('leaderboard-list').innerHTML = sorted.map((u, i) => `
+                <div class="flex items-center justify-between p-5 glass-card rounded-3xl">
+                    <div class="flex items-center gap-4">
+                        <span class="w-8 h-8 flex items-center justify-center font-black text-lg">
+                            ${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1)}
+                        </span>
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800">
+                        <div>
+                            <div class="font-black dark:text-white text-sm">${u.name}</div>
+                            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${i === 0 ? 'المتصدر' : 'طالب مجتهد'}</div>
+                        </div>
                     </div>
                     <div class="text-right">
-                        <div class="text-2xl font-black text-teal-600">${u.score.toLocaleString()}</div>
-                        <div class="text-[10px] text-slate-400 font-bold">نقطة</div>
+                        <div class="font-black text-xl text-teal-600">${u.score}</div>
+                        <div class="text-[8px] text-slate-400 font-black uppercase">نقطة</div>
                     </div>
                 </div>
             `).join('');
         }
 
-        // --- Game Logic ---
-        let gameTimer, timeLeft, score, currentQuestionIndex;
-
+        // --- Game System ---
+        let game = { score: 0, time: 30, timer: null };
         function startGame() {
+            game.score = 0; game.time = 30;
             document.getElementById('game-start').classList.add('hidden');
             document.getElementById('game-result').classList.add('hidden');
             document.getElementById('game-active').classList.remove('hidden');
-            
-            score = 0;
-            timeLeft = 30;
-            currentQuestionIndex = 0;
-            updateGameUI();
-            
-            gameTimer = setInterval(() => {
-                timeLeft--;
-                document.getElementById('game-timer').innerText = timeLeft;
-                if(timeLeft <= 0) endGame();
+            document.getElementById('game-score').innerText = 0;
+            document.getElementById('game-timer').innerText = 30;
+            nextQuestion();
+            if(game.timer) clearInterval(game.timer);
+            game.timer = setInterval(() => {
+                game.time--;
+                document.getElementById('game-timer').innerText = game.time;
+                if(game.time <= 0) endGame();
             }, 1000);
-            
-            showQuestion();
         }
 
-        function showQuestion() {
-            const q = platformData.gameQuestions[currentQuestionIndex % platformData.gameQuestions.length];
+        function nextQuestion() {
+            const q = platformData.gameQuestions[Math.floor(Math.random() * platformData.gameQuestions.length)];
             document.getElementById('current-question').innerText = q.q;
-            document.getElementById('answers-grid').innerHTML = q.a.map((ans, i) => `
-                <button onclick="checkAnswer(${i})" class="bg-white dark:bg-slate-800 p-6 rounded-3xl font-bold text-xl border-2 border-slate-100 dark:border-slate-700 hover:border-teal-500 hover:shadow-xl hover:shadow-teal-500/5 transition-all text-right">
-                    ${ans}
-                </button>
+            document.getElementById('answers-grid').innerHTML = q.a.map((ans, idx) => `
+                <button onclick="checkAnswer(${idx}, ${q.correct})" class="p-4 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-2xl border-2 border-transparent hover:border-teal-500 font-bold transition-all text-base">${ans}</button>
             `).join('');
         }
 
-        function checkAnswer(idx) {
-            const q = platformData.gameQuestions[currentQuestionIndex % platformData.gameQuestions.length];
-            if(idx === q.correct) {
-                score += 10;
-                showToast('+10 نقاط! إجابة صحيحة', 'success');
+        function checkAnswer(idx, correct) {
+            if(idx === correct) {
+                game.score += 10;
+                showToast('أحسنت! إجابة صحيحة', 'success');
             } else {
-                showToast('إجابة خاطئة، حاول مرة أخرى', 'error');
+                showToast('للأسف، إجابة غير صحيحة', 'error');
             }
-            currentQuestionIndex++;
-            updateGameUI();
-            showQuestion();
-        }
-
-        function updateGameUI() {
-            document.getElementById('game-score').innerText = score;
+            document.getElementById('game-score').innerText = game.score;
+            nextQuestion();
         }
 
         function endGame() {
-            clearInterval(gameTimer);
+            clearInterval(game.timer);
             document.getElementById('game-active').classList.add('hidden');
             document.getElementById('game-result').classList.remove('hidden');
-            document.getElementById('final-score').innerText = score;
-            
+            document.getElementById('final-score').innerText = game.score;
             if(currentUser) {
-                currentUser.score += score;
-                const lbUser = leaderboard.find(l => l.name === currentUser.name);
-                if(lbUser) lbUser.score += score;
+                currentUser.score += game.score;
+                const entry = leaderboard.find(l => l.name === currentUser.name);
+                if(entry) entry.score = currentUser.score;
                 else leaderboard.push({ name: currentUser.name, score: currentUser.score });
-                updateAuthUI();
                 renderLeaderboard();
+                updateAuthUI();
             }
         }
 
         // --- Helpers ---
-        function toggleDarkMode() {
-            document.documentElement.classList.toggle('dark');
+        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); }
+        function openAuthModal(m) { 
+            document.getElementById('auth-modal').classList.remove('opacity-0', 'invisible');
+            toggleAuthForms(m);
         }
-
-        function showToast(msg, type) {
+        function closeAuthModal() { document.getElementById('auth-modal').classList.add('opacity-0', 'invisible'); }
+        function toggleAuthForms(m) {
+            document.getElementById('login-form').classList.toggle('hidden', m !== 'login');
+            document.getElementById('signup-form').classList.toggle('hidden', m !== 'signup');
+        }
+        function showToast(m, t) {
             const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toast-msg');
-            toast.className = `fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] px-8 py-4 rounded-2xl shadow-2xl transition-all duration-500 flex items-center gap-3 ${type === 'success' ? 'bg-teal-600 text-white' : 'bg-rose-600 text-white'}`;
-            toastMsg.innerText = msg;
+            document.getElementById('toast-msg').innerText = m;
+            toast.className = `fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 rounded-2xl shadow-2xl text-white font-bold transition-all duration-500 ${t === 'success' ? 'bg-teal-600' : 'bg-rose-600'}`;
             toast.classList.remove('opacity-0', 'translate-y-20');
             setTimeout(() => toast.classList.add('opacity-0', 'translate-y-20'), 3000);
         }
+        function logout() { currentUser = null; updateAuthUI(); navigateTo('home'); showToast('تم تسجيل الخروج', 'success'); }
 
-        // --- Init ---
         window.onload = () => {
+            renderSubjects(); renderBooks(); renderQuizzes(); renderLeaderboard(); updateAuthUI();
             lucide.createIcons();
-            updateAuthUI();
-            renderSubjects();
-            renderBooks();
-            renderQuizzes();
-            renderLeaderboard();
+            
+            // Close search on click outside
+            document.addEventListener('click', (e) => {
+                const dropdown = document.getElementById('search-dropdown');
+                if (!e.target.closest('#globalSearch') && !e.target.closest('#search-dropdown')) {
+                    dropdown.classList.add('hidden');
+                }
+            });
         };
     </script>
 </body>
